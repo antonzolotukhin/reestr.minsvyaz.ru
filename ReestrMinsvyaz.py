@@ -71,12 +71,15 @@ class MinsvyazReestr:
                 self.df = self.df.append(pd.Series(data, index=self.data_columns), ignore_index=True)
     
     def clickButton (self,name):
-        btn = self.driver.find_element_by_xpath(self.xpath_ctrls_dict.get(name))
         try:
+            btn = self.driver.find_element_by_xpath(self.xpath_ctrls_dict.get(name))
             btn.click()
-            return 1
+        except exceptions.NoSuchElementException:
+            return 0
         except exceptions.ElementNotInteractableException:
             return 0
+        else:
+            return 1
                 
                 
     def getAllPagesData(self, perpage=100,delay=20):
