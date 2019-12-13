@@ -82,7 +82,7 @@ class MinsvyazReestr:
             return 1
                 
                 
-    def getAllPagesData(self, perpage=100,delay=20):
+    def getAllPagesData(self, perpage=100):
         if perpage not in ('20','40','100'):
             perpage='100'
         self.getDriver(page_num = 1)
@@ -91,6 +91,6 @@ class MinsvyazReestr:
         self.getAllData()
         while self.clickButton('next_page'):	
             self.getAllData()
-            WebDriverWait(self.driver, delay)
+            #WebDriverWait(self.driver, delay)
         self.driver.close()
 
