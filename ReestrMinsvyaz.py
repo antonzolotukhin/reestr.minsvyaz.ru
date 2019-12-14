@@ -1,14 +1,17 @@
 import pandas as pd
 import re
-from selenium.common import exceptions
-from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from webdriver_manager.chrome import ChromeDriverManager
+from lxml import etree
+
+try:
+    # Python 2
+    from urllib2 import urlopen
+except ImportError:
+    from urllib.request import urlopen
 
 class MinsvyazReestr:
     def __init__(self, url):
         self.url = url
-        self.driver = None
+        self.tree = None
         self.page_num = None
         self.xpath_data_dict = self.XPathDataDict()
         self.xpath_ctrls_dict = self.XPathCtrlsDict()
@@ -16,29 +19,30 @@ class MinsvyazReestr:
         self.df = pd.DataFrame(columns=self.data_columns, index=[])
                         
                                 
-        
-    def getDriver(self, page_num):
-        #self.driver = webdriver.Chrome()
-        self.driver = webdriver.Chrome(ChromeDriverManager().install())
-        self.driver.get(self.url.format(page_num = page_num))
-    
+    def getTree(self, page_num,perpage):
+        url=self.url.format(page_num = page_num,perpage = perpage)
+        print ('fetching\t' + url)
+        response = urlopen(url)
+        htmlparser = etree.HTMLParser()
+        self.tree = etree.parse(response, htmlparser)
+   
     def getIds(self):
         ids_list = []
-        ids = self.driver.find_elements_by_xpath('//*[@id]')
+        ids = self.tree.xpath('//div[@class="line"]')
         for ii in ids:
-            if ii.tag_name == 'div' and len(re.findall(r'bx_\d+_\d+',ii.get_attribute('id'))) > 0:
+            if len(re.findall(r'bx_\d+_\d+',ii.attrib.get('id'))) > 0:
                 try:
-                    ids_list.append(ii.get_attribute('id'))
+                    ids_list.append(ii.attrib['id'])
                 except:
                    None
         return ids_list
     
     def XPathDataDict(self):
-        xpathdict = { 'no': '//*[@id="{i_d}"]/div[1]'
-                    , 'name': '//*[@id="{i_d}"]/div[2]/a'
-                    , 'class': '//*[@id="{i_d}"]/div[3]/span'
-                    , 'date': '//*[@id="{i_d}"]/div[4]'
-                    #, 'site': '//*[@id="{i_d}"]/div[5]/a'                    
+        xpathdict = { 'no': '//div[@id="{i_d}"]/div[1]'
+                    , 'name': '//div[@id="{i_d}"]/div[2]/a'
+                    , 'class': '//div[@id="{i_d}"]/div[3]/span'
+                    , 'date': '//div[@id="{i_d}"]/div[4]'
+                    #, 'site': '//div[@id="{i_d}"]/div[5]/a'                    
                     }
         return xpathdict
 		
@@ -49,19 +53,13 @@ class MinsvyazReestr:
                     , '40': '//ul[@class="select2-results__options"]/li[contains(text(), "40")]'
                     , '100': '//ul[@class="select2-results__options"]/li[contains(text(), "100")]'
                     }
-        return xpathdict
-    
-
-    
+        return xpathdict    
     
     def getXPathData(self, xpath, i_d):
-        try:
-            return self.driver.find_element_by_xpath(xpath.format(i_d=i_d)).text
-        except:
-            return None
-        
+        return re.sub(r'\s+', ' ', self.tree.xpath(xpath.format(i_d=i_d))[0].text.strip())
     
     def getAllData(self):
+        parsed_count=0
         for i_d in self.getIds():
             data = []
             for xpath in self.xpath_data_dict:
@@ -69,28 +67,23 @@ class MinsvyazReestr:
                 
             if any(data): #checks to see if the list data has all 'None' values
                 self.df = self.df.append(pd.Series(data, index=self.data_columns), ignore_index=True)
-    
-    def clickButton (self,name):
-        try:
-            btn = self.driver.find_element_by_xpath(self.xpath_ctrls_dict.get(name))
-            btn.click()
-        except exceptions.NoSuchElementException:
-            return 0
-        except exceptions.ElementNotInteractableException:
-            return 0
-        else:
-            return 1
-                
-                
+                parsed_count+=1
+        print('\t\t{} rows parsed.'.format(parsed_count)) 
+
+    def isElementExists (self,name):
+            return (len(self.tree.xpath(self.xpath_ctrls_dict.get(name))) > 0)
+
     def getAllPagesData(self, perpage=100):
+        print ('Process started.')
         if perpage not in ('20','40','100'):
             perpage='100'
-        self.getDriver(page_num = 1)
-        self.clickButton('selector')
-        self.clickButton(perpage)
+        page_num=1
+        self.getTree(page_num,perpage)
         self.getAllData()
-        while self.clickButton('next_page'):	
+        while self.isElementExists('next_page'):
+            page_num+=1
+            self.getTree(page_num,perpage)
             self.getAllData()
-            #WebDriverWait(self.driver, delay)
-        self.driver.close()
+        print ('Done!')
+        
 
