@@ -15,7 +15,7 @@ class MinsvyazReestr:
         self.page_num = None
         self.xpath_data_dict = self.XPathDataDict()
         self.xpath_ctrls_dict = self.XPathCtrlsDict()
-        self.data_columns = ['no', 'name', 'class', 'date']#, 'site']
+        self.data_columns = ['no', 'name', 'class', 'date', 'site']
         self.df = pd.DataFrame(columns=self.data_columns, index=[])
                         
                                 
@@ -38,11 +38,11 @@ class MinsvyazReestr:
         return ids_list
     
     def XPathDataDict(self):
-        xpathdict = { 'no': '//div[@id="{i_d}"]/div[1]'
-                    , 'name': '//div[@id="{i_d}"]/div[2]/a'
-                    , 'class': '//div[@id="{i_d}"]/div[3]/span'
-                    , 'date': '//div[@id="{i_d}"]/div[4]'
-                    #, 'site': '//div[@id="{i_d}"]/div[5]/a'                    
+        xpathdict = { 'no': '//div[@id="{i_d}"]/div[1]/text()'
+                    , 'name': '//div[@id="{i_d}"]/div[2]/a/text()'
+                    , 'class': '//div[@id="{i_d}"]/div[3]/span/text()'
+                    , 'date': '//div[@id="{i_d}"]/div[4]/text()'
+                    , 'site': '//div[@id="{i_d}"]/div[5]/a'                    
                     }
         return xpathdict
 		
@@ -56,7 +56,16 @@ class MinsvyazReestr:
         return xpathdict    
     
     def getXPathData(self, xpath, i_d):
-        return re.sub(r'\s+', ' ', self.tree.xpath(xpath.format(i_d=i_d))[0].text.strip())
+        elmnt = self.tree.xpath(xpath.format(i_d=i_d))[0]
+        if isinstance(elmnt, str):
+            return re.sub(r'\s+', ' ', elmnt.strip())
+        else:
+            text = re.sub(r'\s+', ' ', elmnt.text.strip())
+            href = elmnt.attrib.get('href')
+            if href != None:
+                return '=HYPERLINK("{href}", "{text}")'.format(href=href,text=re.sub(r'"','""',text))
+            else:
+                return text
     
     def getAllData(self):
         parsed_count=0
