@@ -24,9 +24,9 @@ class MinsvyazReestr:
     
     def getIds(self):
         ids_list = []
-        ids = self.driver.find_elements_by_xpath('//*[@id]')
+        ids = self.driver.find_elements_by_xpath('//div[@class="line"]')
         for ii in ids:
-            if ii.tag_name == 'div' and len(re.findall(r'bx_\d+_\d+',ii.get_attribute('id'))) > 0:
+            if len(re.findall(r'bx_\d+_\d+',ii.get_attribute('id'))) > 0:
                 try:
                     ids_list.append(ii.get_attribute('id'))
                 except:
@@ -34,11 +34,11 @@ class MinsvyazReestr:
         return ids_list
     
     def XPathDataDict(self):
-        xpathdict = { 'no': '//*[@id="{i_d}"]/div[1]'
-                    , 'name': '//*[@id="{i_d}"]/div[2]/a'
-                    , 'class': '//*[@id="{i_d}"]/div[3]/span'
-                    , 'date': '//*[@id="{i_d}"]/div[4]'
-                    #, 'site': '//*[@id="{i_d}"]/div[5]/a'                    
+        xpathdict = { 'no': '//div[@id="{i_d}"]/div[1]'
+                    , 'name': '//div[@id="{i_d}"]/div[2]/a'
+                    , 'class': '//div[@id="{i_d}"]/div[3]/span'
+                    , 'date': '//div[@id="{i_d}"]/div[4]'
+                    #, 'site': '//div[@id="{i_d}"]/div[5]/a'                    
                     }
         return xpathdict
 		
