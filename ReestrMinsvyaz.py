@@ -47,18 +47,21 @@ class MinsvyazReestr:
         return xpathdict    
     
     def getXPathData(self, row, xpath):
-        elmnt = row.xpath(xpath)[0]
-        if isinstance(elmnt, str):
-            content = elmnt
-            href = None
-        else:
-            content = ''.join(elmnt.itertext())
-            href = elmnt.attrib.get('href')
-        content=re.sub(r'\s+', ' ', content.strip())
+        data=[]
+        for elmnt in row.xpath(xpath):
+            if isinstance(elmnt, str):
+                content = elmnt
+                href = None
+            else:
+                content = ''.join(elmnt.itertext())
+                href = elmnt.attrib.get('href')
+            content=re.sub(r'\s+', ' ', content.strip())
+            data.append(content)
+        content = '\n'.join(data)
         if content.isdigit():
             content = int(content)
         if href != None:
-            content = '=HYPERLINK("{href}", "{text}")'.format(href=href,text=re.sub(r'"','""',content)) 
+            content = '=HYPERLINK("{href}", "{text}")'.format(href=href,text=re.sub(r'"','""',content))
         return content
             
     def getAllData(self):

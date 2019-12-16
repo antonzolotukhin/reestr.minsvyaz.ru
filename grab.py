@@ -6,10 +6,9 @@ start=datetime.now()
 reestr = MinsvyazReestr ('https://reestr.minsvyaz.ru/reestr/?PAGEN_1={page_num}&show_count={perpage}')
 reestr.getAllPagesData()
 
-
-
 reestr.df.columns=[u'рег. №', u'Название',u'Класс ПО',u'Дата внесения',u'Сайт']
 print (reestr.df)
+
 with pd.ExcelWriter('reestr.xlsx', engine='xlsxwriter') as writer:
     reestr.df.to_excel(writer,sheet_name='Реестр ПО',index=False)
     worksheet=writer.sheets['Реестр ПО']
