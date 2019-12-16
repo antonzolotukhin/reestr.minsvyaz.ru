@@ -17,7 +17,6 @@ class MinsvyazReestr:
         self.xpath_ctrls_dict = self.XPathCtrlsDict()
         self.data_columns = ['no', 'name', 'class', 'date', 'site']
         self.df = pd.DataFrame(columns=self.data_columns, index=[])
-                        
                                 
     def getTree(self, page_num,perpage):
         url=self.url.format(page_num = page_num,perpage = perpage)
@@ -26,23 +25,15 @@ class MinsvyazReestr:
         htmlparser = etree.HTMLParser()
         self.tree = etree.parse(response, htmlparser)
    
-    def getIds(self):
-        ids_list = []
-        ids = self.tree.xpath('//div[@class="line"]')
-        for ii in ids:
-            if len(re.findall(r'bx_\d+_\d+',ii.attrib.get('id'))) > 0:
-                try:
-                    ids_list.append(ii.attrib['id'])
-                except:
-                   None
-        return ids_list
+    def getRows(self):
+        return self.tree.xpath('//div[@class="line"]')
     
     def XPathDataDict(self):
-        xpathdict = { 'no': '//div[@id="{i_d}"]/div[1]/text()'
-                    , 'name': '//div[@id="{i_d}"]/div[2]/a/text()'
-                    , 'class': '//div[@id="{i_d}"]/div[3]/span/text()'
-                    , 'date': '//div[@id="{i_d}"]/div[4]/text()'
-                    , 'site': '//div[@id="{i_d}"]/div[5]/a'                    
+        xpathdict = { 'no': 'div[@class="num"]/text()'
+                    , 'name': 'div[@class="name"]/a/text()'
+                    , 'class': 'div[@class="class"]'
+                    , 'date': 'div[@class="date"]/text()'
+                    , 'site': 'div[@class="status"]/a'                    
                     }
         return xpathdict
 		
@@ -55,29 +46,31 @@ class MinsvyazReestr:
                     }
         return xpathdict    
     
-    def getXPathData(self, xpath, i_d):
-        elmnt = self.tree.xpath(xpath.format(i_d=i_d))[0]
+    def getXPathData(self, row, xpath):
+        elmnt = row.xpath(xpath)[0]
         if isinstance(elmnt, str):
-            return re.sub(r'\s+', ' ', elmnt.strip())
+            content = elmnt
+            href = None
         else:
-            text = re.sub(r'\s+', ' ', elmnt.text.strip())
+            content = ''.join(elmnt.itertext())
             href = elmnt.attrib.get('href')
-            if href != None:
-                return '=HYPERLINK("{href}", "{text}")'.format(href=href,text=re.sub(r'"','""',text))
-            else:
-                return text
-    
+        content=re.sub(r'\s+', ' ', content.strip())
+        if content.isdigit():
+            content = int(content)
+        if href != None:
+            content = '=HYPERLINK("{href}", "{text}")'.format(href=href,text=re.sub(r'"','""',content)) 
+        return content
+            
     def getAllData(self):
         parsed_count=0
-        for i_d in self.getIds():
+        for row in self.getRows():
             data = []
             for xpath in self.xpath_data_dict:
-                data.append(self.getXPathData(xpath=self.xpath_data_dict[xpath], i_d=i_d))
-                
+                data.append(self.getXPathData(row=row, xpath=self.xpath_data_dict[xpath]))
             if any(data): #checks to see if the list data has all 'None' values
                 self.df = self.df.append(pd.Series(data, index=self.data_columns), ignore_index=True)
                 parsed_count+=1
-        print('\t\t{} rows parsed.'.format(parsed_count)) 
+        print('\t\t{} rows parsed.'.format(parsed_count))
 
     def isElementExists (self,name):
             return (len(self.tree.xpath(self.xpath_ctrls_dict.get(name))) > 0)

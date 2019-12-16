@@ -1,10 +1,14 @@
 import pandas as pd
 from datetime import datetime
 from ReestrMinsvyaz import MinsvyazReestr
+
 start=datetime.now()			
 reestr = MinsvyazReestr ('https://reestr.minsvyaz.ru/reestr/?PAGEN_1={page_num}&show_count={perpage}')
 reestr.getAllPagesData()
-reestr.df.columns=['рег. №', 'Название','Класс ПО','Дата внесения','Сайт']
+
+
+
+reestr.df.columns=[u'рег. №', u'Название',u'Класс ПО',u'Дата внесения',u'Сайт']
 print (reestr.df)
 with pd.ExcelWriter('reestr.xlsx', engine='xlsxwriter') as writer:
     reestr.df.to_excel(writer,sheet_name='Реестр ПО',index=False)
